@@ -6,8 +6,8 @@ import in.gram.gov.app.egram_service.constants.exception.ResourceNotFoundExcepti
 import in.gram.gov.app.egram_service.domain.entity.Panchayat;
 import in.gram.gov.app.egram_service.domain.repository.PanchayatRepository;
 import in.gram.gov.app.egram_service.dto.filters.PanchayatFilter;
-import in.gram.gov.app.egram_service.utility.SpecificationBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PanchayatService {
     private final PanchayatRepository panchayatRepository;
 
     @Transactional
     public Panchayat create(Panchayat panchayat) {
+        log.info("PanchayatService.create called - slug={}", panchayat.getSlug());
         if (panchayatRepository.existsBySlug(panchayat.getSlug())) {
             throw new DuplicateResourceException("Panchayat with slug " + panchayat.getSlug() + " already exists");
         }
@@ -28,25 +30,30 @@ public class PanchayatService {
     }
 
     public Panchayat findById(Long id) {
+        log.debug("PanchayatService.findById called - id={}", id);
         return panchayatRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Panchayat", id));
     }
 
     public Panchayat findBySlug(String slug) {
+        log.debug("PanchayatService.findBySlug called - slug={}", slug);
         return panchayatRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Panchayat with slug " + slug + " not found"));
     }
 
     public Page<Panchayat> findAll(Pageable pageable) {
+        log.info("PanchayatService.findAll called - pageable={}", pageable);
         return panchayatRepository.findAll(pageable);
     }
 
     public Page<Panchayat> findByStatus(PanchayatStatus status, Pageable pageable) {
+        log.info("PanchayatService.findByStatus called - status={}, pageable={}", status, pageable);
         return panchayatRepository.findByStatus(status, pageable);
     }
 
 
     public Specification<Panchayat> buildSpecification(PanchayatFilter filter) {
+        log.debug("PanchayatService.buildSpecification called - filter={}", filter);
         Specification<Panchayat> spec = Specification.where(null);
         
         if (filter.getStatus() != null) {
@@ -80,6 +87,7 @@ public class PanchayatService {
     }
 
     public Page<Panchayat> findByFilters(PanchayatFilter panchayatFilter) {
+        log.info("PanchayatService.findByFilters called - filter={}", panchayatFilter);
         Pageable pageable = panchayatFilter.createPageable(panchayatFilter);
         Specification<Panchayat> panchayatSpecification = buildSpecification(panchayatFilter);
         return panchayatRepository.findAll(panchayatSpecification, pageable);
@@ -87,11 +95,13 @@ public class PanchayatService {
 
     @Transactional
     public Panchayat update(Panchayat panchayat) {
+        log.info("PanchayatService.update called - id={}", panchayat.getId());
         return panchayatRepository.save(panchayat);
     }
 
     @Transactional
     public void updateStatus(Long id, PanchayatStatus status) {
+        log.info("PanchayatService.updateStatus called - id={}, status={}", id, status);
         Panchayat panchayat = findById(id);
         panchayat.setStatus(status);
         panchayatRepository.save(panchayat);
@@ -99,9 +109,9 @@ public class PanchayatService {
 
     @Transactional
     public void delete(Long id) {
+        log.info("PanchayatService.delete called - id={}", id);
         Panchayat panchayat = findById(id);
         panchayat.setStatus(PanchayatStatus.DELETED);
         panchayatRepository.save(panchayat);
     }
 }
-

@@ -3,8 +3,6 @@ package in.gram.gov.app.egram_service.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "analytics",
         indexes = {

@@ -4,11 +4,12 @@
 // ============================================
 package in.gram.gov.app.egram_service.domain.entity;
 
-import jakarta.persistence .*;
-        import jakarta.validation.constraints .*;
-        import lombok .*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
-        import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity

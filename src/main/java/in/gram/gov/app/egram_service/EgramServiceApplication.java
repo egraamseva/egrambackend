@@ -8,7 +8,7 @@ import java.util.TimeZone;
 @SpringBootApplication
 public class EgramServiceApplication {
 
-    public static void main(String[] args) {
+     static void main(String[] args) {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Kolkata"));  // <--- fix
         SpringApplication.run(EgramServiceApplication.class, args);
     }

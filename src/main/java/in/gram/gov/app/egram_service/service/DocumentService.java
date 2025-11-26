@@ -5,6 +5,7 @@ import in.gram.gov.app.egram_service.constants.exception.ResourceNotFoundExcepti
 import in.gram.gov.app.egram_service.domain.entity.Document;
 import in.gram.gov.app.egram_service.domain.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -12,38 +13,46 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DocumentService {
     private final DocumentRepository documentRepository;
 
     @Transactional
     public Document create(Document document) {
+        log.info("DocumentService.create called - title={}", document.getTitle());
         return documentRepository.save(document);
     }
 
     public Document findById(Long id) {
+        log.info("DocumentService.findById called - id={}", id);
         return documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document", id));
     }
 
     public Page<Document> findByPanchayatId(Long panchayatId, Pageable pageable) {
+        log.info("DocumentService.findByPanchayatId called - panchayatId={}, pageable={}", panchayatId, pageable);
         return documentRepository.findByPanchayatId(panchayatId, pageable);
     }
 
     public Page<Document> findByPanchayatIdAndCategory(Long panchayatId, DocumentCategory category, Pageable pageable) {
+        log.info("DocumentService.findByPanchayatIdAndCategory called - panchayatId={}, category={}", panchayatId, category);
         return documentRepository.findByPanchayatIdAndCategory(panchayatId, category, pageable);
     }
 
     public Page<Document> findByPanchayatSlug(String slug, Pageable pageable) {
+        log.info("DocumentService.findByPanchayatSlug called - slug={}, pageable={}", slug, pageable);
         return documentRepository.findByPanchayatSlug(slug, pageable);
     }
 
     @Transactional
     public Document update(Document document) {
+        log.info("DocumentService.update called - id={}", document.getId());
         return documentRepository.save(document);
     }
 
     @Transactional
     public void incrementDownloadCount(Long id) {
+        log.info("DocumentService.incrementDownloadCount called - id={}", id);
         Document document = findById(id);
         document.setDownloadCount(document.getDownloadCount() + 1);
         documentRepository.save(document);
@@ -51,7 +60,7 @@ public class DocumentService {
 
     @Transactional
     public void delete(Long id) {
+        log.info("DocumentService.delete called - id={}", id);
         documentRepository.deleteById(id);
     }
 }
-

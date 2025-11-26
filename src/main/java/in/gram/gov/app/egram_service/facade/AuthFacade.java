@@ -16,6 +16,7 @@ import in.gram.gov.app.egram_service.service.PanchayatService;
 import in.gram.gov.app.egram_service.service.UserService;
 import in.gram.gov.app.egram_service.transformer.UserTransformer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthFacade {
     private final UserService userService;
     private final PanchayatService panchayatService;
@@ -36,6 +38,7 @@ public class AuthFacade {
 
     @Transactional
     public LoginResponseDTO register(RegisterRequestDTO request) {
+        log.info("AuthFacade.register called - email={}, role={}", request.getEmail(), request.getRole());
 
         validateRegistrationRequest(request);
 
@@ -68,6 +71,7 @@ public class AuthFacade {
                 .status(UserStatus.ACTIVE)
                 .build();
 
+        log.info("AuthFacade.createSuperAdminUser - creating super admin for email={}", request.getEmail());
         return userService.create(user);
     }
 
@@ -97,6 +101,7 @@ public class AuthFacade {
                     .status(PanchayatStatus.ACTIVE)
                     .build();
             panchayat = panchayatService.create(panchayat);
+            log.info("AuthFacade.createPanchayatAdminUser - created new panchayat slug={}", request.getPanchayatSlug());
         }
 
         User user = User.builder()
@@ -110,6 +115,7 @@ public class AuthFacade {
                 .panchayat(panchayat)
                 .build();
 
+        log.info("AuthFacade.createPanchayatAdminUser - creating panchayat admin email={}, panchayat={}", request.getEmail(), panchayat.getSlug());
         return userService.create(user);
     }
 
@@ -129,6 +135,7 @@ public class AuthFacade {
     }
 
     public LoginResponseDTO login(LoginRequestDTO request) {
+        log.info("AuthFacade.login called - email={}", request.getEmail());
         User user = userService.findByEmail(request.getEmail());
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
@@ -149,6 +156,7 @@ public class AuthFacade {
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequestDTO request) {
+        log.info("AuthFacade.forgotPassword called - email={}", request.getEmail());
         User user = userService.findByEmailOrNull(request.getEmail());
         if (user != null) {
             String token = UUID.randomUUID().toString();
@@ -156,11 +164,13 @@ public class AuthFacade {
             user.setPasswordResetExpiry(LocalDateTime.now().plusHours(24));
             userService.update(user);
             // TODO: Send email with reset link
+            log.info("AuthFacade.forgotPassword - password reset token generated for email={}", request.getEmail());
         }
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequestDTO request) {
+        log.info("AuthFacade.resetPassword called - token present: {}", request.getToken() != null);
         User user = userService.findByPasswordResetToken(request.getToken());
 
         if (user.getPasswordResetExpiry().isBefore(LocalDateTime.now())) {
@@ -175,6 +185,7 @@ public class AuthFacade {
 
     @Transactional
     public void changePassword(String email, ChangePasswordRequestDTO request) {
+        log.info("AuthFacade.changePassword called - email={}", email);
         User user = userService.findByEmail(email);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
@@ -186,12 +197,14 @@ public class AuthFacade {
     }
 
     public UserResponseDTO getCurrentUser(String email) {
+        log.info("AuthFacade.getCurrentUser called - email={}", email);
         User user = userService.findByEmail(email);
         return UserTransformer.toDTO(user);
     }
 
     @Transactional
     public UserResponseDTO updateProfile(String email, UserRequestDTO request) {
+        log.info("AuthFacade.updateProfile called - email={}", email);
         User user = userService.findByEmail(email);
         user.setName(request.getName());
         user.setPhone(request.getPhone());
@@ -199,4 +212,3 @@ public class AuthFacade {
         return UserTransformer.toDTO(user);
     }
 }
-

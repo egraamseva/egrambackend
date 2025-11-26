@@ -1,6 +1,5 @@
 package in.gram.gov.app.egram_service.facade;
 
-import in.gram.gov.app.egram_service.constants.enums.ActionType;
 import in.gram.gov.app.egram_service.constants.enums.PanchayatStatus;
 import in.gram.gov.app.egram_service.constants.enums.UserRole;
 import in.gram.gov.app.egram_service.constants.enums.UserStatus;
@@ -10,18 +9,20 @@ import in.gram.gov.app.egram_service.dto.filters.AuditFilter;
 import in.gram.gov.app.egram_service.dto.response.AuditLogResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.SystemAnalyticsResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.UserResponseDTO;
-import in.gram.gov.app.egram_service.service.*;
+import in.gram.gov.app.egram_service.service.AuditLogService;
+import in.gram.gov.app.egram_service.service.PanchayatService;
+import in.gram.gov.app.egram_service.service.UserService;
 import in.gram.gov.app.egram_service.transformer.AuditLogTransformer;
 import in.gram.gov.app.egram_service.transformer.UserTransformer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminFacade {
     private final UserService userService;
     private final PanchayatService panchayatService;
@@ -33,6 +34,7 @@ public class AdminFacade {
     private final AuditLogService auditLogService;
 
     public Page<UserResponseDTO> getAllUsers(UserRole role, UserStatus status, Pageable pageable) {
+        log.info("AdminFacade.getAllUsers called - role={}, status={}, pageable={}", role, status, pageable);
         // Get all users (panchayatId = null means all panchayats)
         Page<in.gram.gov.app.egram_service.domain.entity.User> users = 
             userService.findByFilters(null, role, status, pageable);
@@ -40,6 +42,7 @@ public class AdminFacade {
     }
 
     public SystemAnalyticsResponseDTO getSystemAnalytics() {
+        log.info("AdminFacade.getSystemAnalytics called");
         SystemAnalyticsResponseDTO analytics = new SystemAnalyticsResponseDTO();
         
         // Count all panchayats
@@ -72,8 +75,8 @@ public class AdminFacade {
     }
 
     public Page<AuditLogResponseDTO> getAuditLogs(AuditFilter auditFilter) {
+        log.info("AdminFacade.getAuditLogs called - filter={}", auditFilter);
         Page<AuditLog> logs = auditLogService.findByFilters(auditFilter);
         return logs.map(AuditLogTransformer::toDTO);
     }
 }
-

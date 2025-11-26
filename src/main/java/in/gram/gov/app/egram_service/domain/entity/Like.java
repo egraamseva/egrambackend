@@ -8,8 +8,6 @@ import in.gram.gov.app.egram_service.constants.enums.ReactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "likes",
         indexes = {

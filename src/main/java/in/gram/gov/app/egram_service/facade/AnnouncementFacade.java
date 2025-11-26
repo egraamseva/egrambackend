@@ -11,6 +11,7 @@ import in.gram.gov.app.egram_service.service.PanchayatService;
 import in.gram.gov.app.egram_service.service.UserService;
 import in.gram.gov.app.egram_service.transformer.AnnouncementTransformer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AnnouncementFacade {
     private final AnnouncementService announcementService;
     private final PanchayatService panchayatService;
@@ -27,6 +29,7 @@ public class AnnouncementFacade {
 
     @Transactional
     public AnnouncementResponseDTO create(AnnouncementRequestDTO request, String email) {
+        log.info("AnnouncementFacade.create called - email={}, title={}", email, request.getTitle());
         Long tenantId = TenantContext.getTenantId();
         Panchayat panchayat = panchayatService.findById(tenantId);
         User author = userService.findByEmail(email);
@@ -40,11 +43,13 @@ public class AnnouncementFacade {
     }
 
     public AnnouncementResponseDTO getById(Long id) {
+        log.info("AnnouncementFacade.getById called - id={}", id);
         Announcement announcement = announcementService.findById(id);
         return AnnouncementTransformer.toDTO(announcement);
     }
 
     public Page<AnnouncementResponseDTO> getAll(Integer page, Integer size) {
+        log.info("AnnouncementFacade.getAll called - page={}, size={}", page, size);
         Long tenantId = TenantContext.getTenantId();
         Pageable pageable = PageRequest.of(
                 page != null ? page : 0,
@@ -57,6 +62,7 @@ public class AnnouncementFacade {
 
     @Transactional
     public AnnouncementResponseDTO update(Long id, AnnouncementRequestDTO request) {
+        log.info("AnnouncementFacade.update called - id={}", id);
         Announcement announcement = announcementService.findById(id);
         
         if (request.getTitle() != null) {
@@ -87,15 +93,18 @@ public class AnnouncementFacade {
 
     @Transactional
     public void updateStatus(Long id, Boolean isActive) {
+        log.info("AnnouncementFacade.updateStatus called - id={}, isActive={}", id, isActive);
         announcementService.updateStatus(id, isActive);
     }
 
     @Transactional
     public void delete(Long id) {
+        log.info("AnnouncementFacade.delete called - id={}", id);
         announcementService.delete(id);
     }
 
     public Page<AnnouncementResponseDTO> getActiveBySlug(String slug, Integer page, Integer size) {
+        log.info("AnnouncementFacade.getActiveBySlug called - slug={}, page={}, size={}", slug, page, size);
         Pageable pageable = PageRequest.of(
                 page != null ? page : 0,
                 size != null ? size : 20,
@@ -106,4 +115,3 @@ public class AnnouncementFacade {
         return announcements.map(AnnouncementTransformer::toDTO);
     }
 }
-
