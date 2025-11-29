@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ public class PublicController {
     private final AnnouncementFacade announcementFacade;
     private final GalleryImageFacade galleryImageFacade;
     private final UserFacade userFacade;
+    private final NewsletterFacade newsletterFacade;
 
     @GetMapping("/panchayats")
     public ResponseEntity<ApiResponse<PagedResponse<PanchayatResponseDTO>>> getAllPanchayats(
@@ -106,6 +108,26 @@ public class PublicController {
             @PageableDefault(size = 20) Pageable pageable) {
         log.info("PublicController.getMembers called - slug={}, pageable={}", slug, pageable);
         PagedResponse<UserResponseDTO> response = PagedResponse.of(userFacade.getTeamMembersBySlug(slug, pageable));
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{slug}/newsletters")
+    public ResponseEntity<ApiResponse<PagedResponse<NewsletterResponseDTO>>> getNewsletters(
+            @PathVariable String slug,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "createdAt",direction = Sort.Direction.DESC) Pageable pageable) {
+        log.info("PublicController.getNewsletters called - slug={}, search={}, pageable={}", slug, search, pageable);
+        PagedResponse<NewsletterResponseDTO> response = PagedResponse.of(
+                newsletterFacade.getPublishedBySlug(slug, search, pageable));
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{slug}/newsletters/{id}")
+    public ResponseEntity<ApiResponse<NewsletterResponseDTO>> getNewsletter(
+            @PathVariable String slug,
+            @PathVariable Long id) {
+        log.info("PublicController.getNewsletter called - slug={}, id={}", slug, id);
+        NewsletterResponseDTO response = newsletterFacade.getPublishedByIdAndSlug(id, slug);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
