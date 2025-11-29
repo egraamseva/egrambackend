@@ -1,15 +1,10 @@
 spring:
   application:
     name: egram-platform
-
-#  datasource:
-#    url: jdbc:postgresql://yamanote.proxy.rlwy.net:48547/railway?currentSchema=egram_service
-#    username: ${DB_USERNAME:postgres}
-#    password: ${DB_PASSWORD:ppdBYaCppKSDbduKiHnouelOWRPmKZwK}
   datasource:
-    url: jdbc:postgresql://yamanote.proxy.rlwy.net:48547/railway?currentSchema=egram_service
+    url: jdbc:postgresql://hopper.proxy.rlwy.net:36839/railway?currentSchema=egram_service
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:ppdBYaCppKSDbduKiHnouelOWRPmKZwK}
+    password: ${DB_PASSWORD:AtVnhUMreDavYkWUDuNHaaLvnMMYFnyM}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
