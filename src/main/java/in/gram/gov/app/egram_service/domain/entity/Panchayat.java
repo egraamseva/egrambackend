@@ -110,6 +110,18 @@ public class Panchayat extends BaseEntity {
     @Column(name = "office_hours", length = 200)
     private String officeHours;
 
+    @Column(name = "population")
+    private Long population;
+
+    @Column(name = "area", length = 50)
+    private String area;
+
+    @Column(name = "wards")
+    private Integer wards;
+
+    @Column(name = "established_year")
+    private Integer establishedYear;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default

@@ -53,6 +53,16 @@ public class User extends BaseEntity {
     @Column(name = "designation", length = 100)
     private String designation;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "image_key", length = 500)
+    private String imageKey;
+
+    @Column(name = "has_image")
+    @Builder.Default
+    private Boolean hasImage = false;
+
     @NotBlank(message = "Password is required")
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;

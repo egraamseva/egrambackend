@@ -69,6 +69,15 @@ public class PanchayatRequestDTO {
     @Size(max = 500, message = "Office hours must not exceed 500 characters")
     private String officeHours;
 
+    private Long population;
+
+    @Size(max = 50, message = "Area must not exceed 50 characters")
+    private String area;
+
+    private Integer wards;
+
+    private Integer establishedYear;
+
     // New fields for settings
     @Size(max = 500, message = "Logo URL must not exceed 500 characters")
     private String logoUrl;

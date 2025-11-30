@@ -13,6 +13,10 @@ public class UserResponseDTO {
     private String email;
     private String phone;
     private String designation;
+    private String imageUrl;
+    private String imageKey;
+    private Boolean hasImage;
+    private String initials; // Generated from name (e.g., "John Doe" -> "JD")
     private UserRole role;
     private UserStatus status;
     private Long panchayatId;

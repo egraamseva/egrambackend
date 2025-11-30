@@ -33,6 +33,10 @@ public class PanchayatTransformer {
         dto.setOfficeEmail(panchayat.getOfficeEmail());
         dto.setMapCoordinates(panchayat.getMapCoordinates());
         dto.setOfficeHours(panchayat.getOfficeHours());
+        dto.setPopulation(panchayat.getPopulation());
+        dto.setArea(panchayat.getArea());
+        dto.setWards(panchayat.getWards());
+        dto.setEstablishedYear(panchayat.getEstablishedYear());
         dto.setStatus(panchayat.getStatus());
         dto.setCreatedAt(panchayat.getCreatedAt());
         dto.setUpdatedAt(panchayat.getUpdatedAt());
@@ -64,6 +68,10 @@ public class PanchayatTransformer {
                 .officeEmail(dto.getOfficeEmail())
                 .mapCoordinates(dto.getMapCoordinates())
                 .officeHours(dto.getOfficeHours())
+                .population(dto.getPopulation())
+                .area(dto.getArea())
+                .wards(dto.getWards())
+                .establishedYear(dto.getEstablishedYear())
                 .logoUrl(dto.getLogoUrl())
                 .heroImageUrl(dto.getHeroImageUrl())
                 .build();
@@ -128,6 +136,18 @@ public class PanchayatTransformer {
         }
         if (dto.getOfficeHours() != null) {
             panchayat.setOfficeHours(dto.getOfficeHours());
+        }
+        if (dto.getPopulation() != null) {
+            panchayat.setPopulation(dto.getPopulation());
+        }
+        if (dto.getArea() != null) {
+            panchayat.setArea(dto.getArea());
+        }
+        if (dto.getWards() != null) {
+            panchayat.setWards(dto.getWards());
+        }
+        if (dto.getEstablishedYear() != null) {
+            panchayat.setEstablishedYear(dto.getEstablishedYear());
         }
         if (dto.getLogoUrl() != null) {
             panchayat.setLogoUrl(dto.getLogoUrl());

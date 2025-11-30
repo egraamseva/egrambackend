@@ -28,6 +28,10 @@ public class PanchayatResponseDTO {
     private String officeEmail;
     private String mapCoordinates;
     private String officeHours;
+    private Long population;
+    private String area;
+    private Integer wards;
+    private Integer establishedYear;
     private PanchayatStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
