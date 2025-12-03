@@ -61,7 +61,7 @@ public class S3CloudStorageService {
     @Value("${backblaze.b2.base-url:https://f001.backblazeb2.com}")
     private String baseUrl;
 
-    @Value("${backblaze.b2.presigned-url-expiration-hours:24}")
+    @Value("${backblaze.b2.presigned-url-expiration-hours:168}")
     private int presignedUrlExpirationHours;
 
     /**
@@ -239,14 +239,31 @@ public class S3CloudStorageService {
      * Get presigned URL for uploaded image (valid for configured hours)
      * For private buckets, presigned URLs are required for access
      * @param fileKey S3 key/path of file
-     * @return Presigned URL with expiration time
+     * @return Presigned URL with expiration time, or null if generation fails
      */
     public String getFileUrl(String fileKey) {
         if (!b2Enabled) {
-            log.warn("B2 is not enabled, cannot generate presigned URL");
+            log.warn("B2 is not enabled, cannot generate presigned URL for fileKey: {}", fileKey);
             return null;
         }
-        return generatePresignedUrl(fileKey);
+        
+        if (fileKey == null || fileKey.trim().isEmpty()) {
+            log.error("Cannot generate presigned URL: fileKey is null or empty");
+            return null;
+        }
+        
+        try {
+            String presignedUrl = generatePresignedUrl(fileKey);
+            if (presignedUrl == null || presignedUrl.isEmpty()) {
+                log.error("Generated presigned URL is null or empty for fileKey: {}", fileKey);
+                return null;
+            }
+            log.debug("Successfully generated presigned URL for fileKey: {}", fileKey);
+            return presignedUrl;
+        } catch (Exception e) {
+            log.error("Exception generating presigned URL for fileKey: {}", fileKey, e);
+            return null;
+        }
     }
 
     /**
@@ -290,6 +307,14 @@ public class S3CloudStorageService {
     public boolean isB2Enabled() {
         return b2Enabled && s3AccessKey != null && !s3AccessKey.isEmpty()
                 && s3SecretKey != null && !s3SecretKey.isEmpty();
+    }
+
+    /**
+     * Get the configured presigned URL expiration time in seconds
+     * @return Expiration time in seconds
+     */
+    public int getPresignedUrlExpirationSeconds() {
+        return presignedUrlExpirationHours * 3600; // Convert hours to seconds
     }
 
     /**

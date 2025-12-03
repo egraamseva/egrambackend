@@ -53,34 +53,67 @@ public class FileController {
                 fileKey, entityType, entityId);
         
         try {
+            // Validate input
+            if (fileKey == null || fileKey.trim().isEmpty()) {
+                log.warn("Invalid fileKey provided: {}", fileKey);
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("File key is required and cannot be empty"));
+            }
+            
+            // Check if B2 is enabled
+            if (!s3CloudStorageService.isB2Enabled()) {
+                log.warn("B2 is not enabled, cannot refresh presigned URL");
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Cloud storage is not enabled"));
+            }
+            
             // Extract file key from URL if a full URL is provided
             String extractedFileKey = extractFileKeyFromUrl(fileKey);
-            String actualFileKey = extractedFileKey != null ? extractedFileKey : fileKey;
+            String actualFileKey = extractedFileKey != null ? extractedFileKey : fileKey.trim();
             
-            // Generate new presigned URL (7 days expiration)
+            if (actualFileKey.isEmpty()) {
+                log.warn("Could not extract file key from: {}", fileKey);
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid file key format. Cannot extract file key from URL."));
+            }
+            
+            log.debug("Generating new presigned URL for fileKey: {}", actualFileKey);
+            
+            // Generate new presigned URL with configured expiration
             String newPresignedUrl = s3CloudStorageService.getFileUrl(actualFileKey);
             
-            if (newPresignedUrl == null) {
+            if (newPresignedUrl == null || newPresignedUrl.isEmpty()) {
+                log.error("Failed to generate presigned URL for fileKey: {}", actualFileKey);
                 return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Failed to generate presigned URL. Cloud storage may not be enabled."));
+                    .body(ApiResponse.error("Failed to generate presigned URL. Please check if the file exists and cloud storage is properly configured."));
             }
+            
+            // Get actual expiration time from service (in seconds)
+            int expiresInSeconds = s3CloudStorageService.getPresignedUrlExpirationSeconds();
             
             // Optionally update database with new presigned URL (fault-tolerant)
             if (entityType != null && entityId != null) {
-                updateEntityUrlInDatabase(entityType, entityId, newPresignedUrl, actualFileKey);
+                try {
+                    updateEntityUrlInDatabase(entityType, entityId, newPresignedUrl, actualFileKey);
+                } catch (Exception dbError) {
+                    // Log but don't fail - URL refresh succeeded
+                    log.warn("Database update failed for {} (ID: {}), but URL refresh succeeded: {}", 
+                            entityType, entityId, dbError.getMessage());
+                }
             }
             
             Map<String, Object> response = new HashMap<>();
             response.put("fileKey", actualFileKey);
             response.put("presignedUrl", newPresignedUrl);
-            response.put("expiresIn", 3600 * 24 * 7); // 7 days in seconds
+            response.put("expiresIn", expiresInSeconds);
             
-            log.info("Presigned URL refreshed successfully for fileKey: {}", actualFileKey);
+            log.info("Presigned URL refreshed successfully for fileKey: {} (expires in {} seconds)", 
+                    actualFileKey, expiresInSeconds);
             return ResponseEntity.ok(ApiResponse.success("Presigned URL refreshed successfully", response));
             
         } catch (Exception e) {
             log.error("Error refreshing presigned URL for fileKey: {}", fileKey, e);
-            return ResponseEntity.badRequest()
+            return ResponseEntity.status(500)
                 .body(ApiResponse.error("Failed to refresh presigned URL: " + e.getMessage()));
         }
     }
