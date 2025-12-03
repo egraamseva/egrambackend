@@ -64,17 +64,17 @@ cloud:
 backblaze:
   b2:
     enabled: ${BACKBLAZE_ENABLED:true}
-    app-key-id: ${BACKBLAZE_APP_KEY_ID:00559c03c66fe0c0000000002}
-    app-key: ${BACKBLAZE_APP_KEY:K005QtotwsqmofAhwgV1pqMdUIMrchw}
-    bucket-name: ${BACKBLAZE_BUCKET_NAME:egramseva}
-    bucket-id: ${BACKBLAZE_BUCKET_ID:b5699c90b36cc6069fae001c}
+    app-key-id: ${BACKBLAZE_APP_KEY_ID:0057a65c2d160d00000000001}
+    app-key: ${BACKBLAZE_APP_KEY:K005Z5WOjx8SCcSvkR4UrJ0qLpLaGXg}
+    bucket-name: ${BACKBLAZE_BUCKET_NAME:egraamseva}
+    bucket-id: ${BACKBLAZE_BUCKET_ID:272ab6351ce2ed5196a00d10}
     base-url: ${BACKBLAZE_BASE_URL:https://f001.backblazeb2.com}
     s3-endpoint: ${BACKBLAZE_S3_ENDPOINT:https://s3.us-east-005.backblazeb2.com}
     s3-region: ${BACKBLAZE_S3_REGION:us-east-005}
     # S3-compatible API credentials - generate from Backblaze B2 > Account Settings > App Keys
     # Create an "Application Key" with S3-compatible access
-    s3-access-key: ${BACKBLAZE_S3_ACCESS_KEY:00559c03c66fe0c0000000002}
-    s3-secret-key: ${BACKBLAZE_S3_SECRET_KEY:K005QtotwsqmofAhwgV1pqMdUIMrchw}
+    s3-access-key: ${BACKBLAZE_S3_ACCESS_KEY:0057a65c2d160d00000000001}
+    s3-secret-key: ${BACKBLAZE_S3_SECRET_KEY:K005Z5WOjx8SCcSvkR4UrJ0qLpLaGXg}
     presigned-url-expiration-hours: ${BACKBLAZE_PRESIGNED_URL_EXPIRATION_HOURS:168} # 7 days (168 hours)
 
 ## Custom path for OpenAPI documentation
