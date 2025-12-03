@@ -3,10 +3,13 @@ package in.gram.gov.app.egram_service.service;
 import in.gram.gov.app.egram_service.constants.exception.ResourceNotFoundException;
 import in.gram.gov.app.egram_service.domain.entity.Album;
 import in.gram.gov.app.egram_service.domain.repository.AlbumRepository;
+import in.gram.gov.app.egram_service.dto.filters.AlbumFilter;
+import in.gram.gov.app.egram_service.utility.SpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +36,24 @@ public class AlbumService {
         return albumRepository.findByPanchayatId(panchayatId, pageable);
     }
 
+    public Page<Album> findAll(AlbumFilter albumFilter) {
+
+        return albumRepository.findAll(buildSpecification(albumFilter),
+                albumFilter.createPageable(albumFilter));
+    }
+
     public Page<Album> findByPanchayatSlug(String slug, Pageable pageable) {
         log.info("AlbumService.findByPanchayatSlug called - slug={}, pageable={}", slug, pageable);
         return albumRepository.findByPanchayatSlug(slug, pageable);
+    }
+
+    public Specification<Album> buildSpecification(AlbumFilter filter) {
+        log.debug("Album.buildSpecification called - filter={}", filter);
+        return SpecificationBuilder.<Album>builder()
+                .equalTo("id", filter.getAlbumId())
+                .equalTo("panchayat.id", filter.getPanchayatId())
+                .equalTo("panchayat.slug", filter.getPanchayatSlug())
+                .build();
     }
 
     @Transactional

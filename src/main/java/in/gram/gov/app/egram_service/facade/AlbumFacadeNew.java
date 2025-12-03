@@ -5,10 +5,15 @@ import in.gram.gov.app.egram_service.constants.security.TenantContext;
 import in.gram.gov.app.egram_service.domain.entity.Album;
 import in.gram.gov.app.egram_service.domain.entity.GalleryImage;
 import in.gram.gov.app.egram_service.domain.entity.Panchayat;
+import in.gram.gov.app.egram_service.dto.filters.AlbumFilter;
 import in.gram.gov.app.egram_service.dto.request.AlbumRequestDTO;
 import in.gram.gov.app.egram_service.dto.response.AlbumResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.ImageCompressionDTO;
-import in.gram.gov.app.egram_service.service.*;
+import in.gram.gov.app.egram_service.service.AlbumService;
+import in.gram.gov.app.egram_service.service.CloudStorageService;
+import in.gram.gov.app.egram_service.service.GalleryImageService;
+import in.gram.gov.app.egram_service.service.ImageCompressionService;
+import in.gram.gov.app.egram_service.service.PanchayatService;
 import in.gram.gov.app.egram_service.transformer.AlbumTransformer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +84,12 @@ public class AlbumFacadeNew {
         return albums.map(AlbumTransformer::toDTO);
     }
 
+    public Page<AlbumResponseDTO> getAll(AlbumFilter albumFilter) {
+        Page<Album> albums = albumService.findAll(albumFilter);
+        return albums.map(AlbumTransformer::toDTO);
+    }
+
+
     /**
      * Update album with optional new cover image
      * If new cover image provided: compress, upload to B2, delete old image, and update URL
@@ -117,6 +128,7 @@ public class AlbumFacadeNew {
     /**
      * Refresh/regenerate presigned URL for album cover image when expired
      * Extracts the file key from current URL and generates a new presigned URL
+     *
      * @param id Album ID
      * @return Updated album with fresh presigned URL
      */
@@ -180,7 +192,8 @@ public class AlbumFacadeNew {
     /**
      * Add multiple gallery images to an album
      * Associates existing gallery images with the specified album
-     * @param albumId Album ID
+     *
+     * @param albumId         Album ID
      * @param galleryImageIds List of gallery image IDs to add
      * @return Count of successfully added images
      */
@@ -213,7 +226,8 @@ public class AlbumFacadeNew {
 
     /**
      * Process image: compress and upload to Backblaze B2
-     * @param imageFile MultipartFile to process
+     *
+     * @param imageFile          MultipartFile to process
      * @param compressionQuality Quality level for compression
      * @return URL of uploaded image or null if storage is disabled
      */
@@ -270,6 +284,7 @@ public class AlbumFacadeNew {
      * Extract file key from Backblaze B2 presigned URL
      * URL format: https://f001.backblazeb2.com/file/bucket-name/images/timestamp-uuid.ext
      * File key format: images/timestamp-uuid.ext
+     *
      * @param imageUrl The presigned URL
      * @return Extracted file key or null if invalid URL format
      */

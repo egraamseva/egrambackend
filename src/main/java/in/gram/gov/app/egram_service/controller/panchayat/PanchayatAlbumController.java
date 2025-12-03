@@ -25,7 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/panchayat/albums")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('PANCHAYAT_ADMIN')")
+//@PreAuthorize("hasRole('PANCHAYAT_ADMIN')")
 @Slf4j
 public class PanchayatAlbumController {
     private final AlbumFacadeNew albumFacade;

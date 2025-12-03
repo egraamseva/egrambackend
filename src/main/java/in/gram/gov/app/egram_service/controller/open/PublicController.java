@@ -2,9 +2,24 @@ package in.gram.gov.app.egram_service.controller.open;
 
 import in.gram.gov.app.egram_service.dto.ApiResponse;
 import in.gram.gov.app.egram_service.dto.PagedResponse;
+import in.gram.gov.app.egram_service.dto.filters.AlbumFilter;
 import in.gram.gov.app.egram_service.dto.filters.PanchayatFilter;
-import in.gram.gov.app.egram_service.dto.response.*;
-import in.gram.gov.app.egram_service.facade.*;
+import in.gram.gov.app.egram_service.dto.response.AlbumResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.AnnouncementResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.GalleryImageResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.NewsletterResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.PanchayatResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.PostResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.SchemeResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.UserResponseDTO;
+import in.gram.gov.app.egram_service.facade.AlbumFacadeNew;
+import in.gram.gov.app.egram_service.facade.AnnouncementFacade;
+import in.gram.gov.app.egram_service.facade.GalleryImageFacade;
+import in.gram.gov.app.egram_service.facade.NewsletterFacade;
+import in.gram.gov.app.egram_service.facade.PanchayatFacade;
+import in.gram.gov.app.egram_service.facade.PostFacade;
+import in.gram.gov.app.egram_service.facade.SchemeFacade;
+import in.gram.gov.app.egram_service.facade.UserFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -12,7 +27,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/public")
@@ -26,6 +46,8 @@ public class PublicController {
     private final GalleryImageFacade galleryImageFacade;
     private final UserFacade userFacade;
     private final NewsletterFacade newsletterFacade;
+    private final AlbumFacadeNew albumFacade;
+
 
     @GetMapping("/panchayats")
     public ResponseEntity<ApiResponse<PagedResponse<PanchayatResponseDTO>>> getAllPanchayats(
@@ -115,7 +137,7 @@ public class PublicController {
     public ResponseEntity<ApiResponse<PagedResponse<NewsletterResponseDTO>>> getNewsletters(
             @PathVariable String slug,
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 20, sort = "createdAt",direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("PublicController.getNewsletters called - slug={}, search={}, pageable={}", slug, search, pageable);
         PagedResponse<NewsletterResponseDTO> response = PagedResponse.of(
                 newsletterFacade.getPublishedBySlug(slug, search, pageable));
@@ -130,4 +152,17 @@ public class PublicController {
         NewsletterResponseDTO response = newsletterFacade.getPublishedByIdAndSlug(id, slug);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+
+    @GetMapping("{slug}/albums")
+    public ResponseEntity<ApiResponse<PagedResponse<AlbumResponseDTO>>> getAll(
+            @PathVariable String slug, @ModelAttribute AlbumFilter albumFilter) {
+        albumFilter.setSortBy("createdAt");
+        albumFilter.setSortOrder(Sort.Direction.DESC);
+        albumFilter.setPanchayatSlug(slug);
+        Page<AlbumResponseDTO> albums = albumFacade.getAll(albumFilter);
+        PagedResponse<AlbumResponseDTO> response = PagedResponse.of(albums);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
 }

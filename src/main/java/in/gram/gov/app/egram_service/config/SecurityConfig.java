@@ -38,7 +38,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://localhost:8080","https://egram.up.railway.app"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "https://egram.up.railway.app"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
@@ -57,20 +57,21 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
-                        .requestMatchers("/api/v1/public/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/v1/public/**").permitAll()
-                        .requestMatchers("/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/admin/**").permitAll()
-                        .requestMatchers("/api/v1/panchayat/**").permitAll()
-                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                                .requestMatchers(HttpMethod.OPTIONS).permitAll()
+                                .requestMatchers("/api/v1/public/**").permitAll()
+                                .requestMatchers("/api/v1/auth/**").permitAll()
+                                .requestMatchers("/v1/public/**").permitAll()
+                                .requestMatchers("/v1/auth/**").permitAll()
+                                .requestMatchers("/api/v1/admin/**").permitAll()
+                                .requestMatchers("/api/v1/files/**").permitAll()
+                                .requestMatchers("/api/v1/panchayat/**").permitAll()
+                                .requestMatchers(AUTH_WHITELIST).permitAll()
 //                        .requestMatchers("/api/v1/admin/**").hasRole("SUPER_ADMIN")
 //                        .requestMatchers("/api/v1/panchayat/**").hasRole("PANCHAYAT_ADMIN")
-                .requestMatchers("/api/v1/admin/**").permitAll()
-                       .requestMatchers("/api/v1/panchayat/**").permitAll()
+                                .requestMatchers("/api/v1/admin/**").permitAll()
+                                .requestMatchers("/api/v1/panchayat/**").permitAll()
 
-                        .anyRequest().authenticated()
+                                .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

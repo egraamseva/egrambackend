@@ -251,7 +251,7 @@ public class S3CloudStorageService {
 
     /**
      * Generate presigned URL for S3 object access
-     * URL will be valid for the configured duration (default: 24 hours)
+     * URL will be valid for the configured duration (default: 7 days / 168 hours)
      * @param fileKey S3 key/path of file
      * @return Presigned URL string
      */
