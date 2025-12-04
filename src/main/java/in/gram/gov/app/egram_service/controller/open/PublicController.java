@@ -12,11 +12,15 @@ import in.gram.gov.app.egram_service.dto.response.PanchayatResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.PostResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.SchemeResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.UserResponseDTO;
+import in.gram.gov.app.egram_service.dto.response.PanchayatWebsiteConfigDTO;
+import in.gram.gov.app.egram_service.dto.response.PlatformLandingPageConfigDTO;
 import in.gram.gov.app.egram_service.facade.AlbumFacadeNew;
 import in.gram.gov.app.egram_service.facade.AnnouncementFacade;
 import in.gram.gov.app.egram_service.facade.GalleryImageFacade;
 import in.gram.gov.app.egram_service.facade.NewsletterFacade;
 import in.gram.gov.app.egram_service.facade.PanchayatFacade;
+import in.gram.gov.app.egram_service.facade.PanchayatWebsiteFacade;
+import in.gram.gov.app.egram_service.facade.PlatformLandingPageFacade;
 import in.gram.gov.app.egram_service.facade.PostFacade;
 import in.gram.gov.app.egram_service.facade.SchemeFacade;
 import in.gram.gov.app.egram_service.facade.UserFacade;
@@ -34,6 +38,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/public")
 @RequiredArgsConstructor
@@ -47,6 +53,8 @@ public class PublicController {
     private final UserFacade userFacade;
     private final NewsletterFacade newsletterFacade;
     private final AlbumFacadeNew albumFacade;
+    private final PlatformLandingPageFacade platformLandingPageFacade;
+    private final PanchayatWebsiteFacade panchayatWebsiteFacade;
 
 
     @GetMapping("/panchayats")
@@ -163,6 +171,24 @@ public class PublicController {
         Page<AlbumResponseDTO> albums = albumFacade.getAll(albumFilter);
         PagedResponse<AlbumResponseDTO> response = PagedResponse.of(albums);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/platform/landing-page")
+    public ResponseEntity<ApiResponse<PlatformLandingPageConfigDTO>> getPlatformLandingPage() {
+        log.info("PublicController.getPlatformLandingPage called");
+        List<in.gram.gov.app.egram_service.dto.response.PlatformSectionResponseDTO> sections = platformLandingPageFacade.getVisibleSections();
+        PlatformLandingPageConfigDTO config = new PlatformLandingPageConfigDTO();
+        config.setSections(sections);
+        return ResponseEntity.ok(ApiResponse.success(config));
+    }
+
+    @GetMapping("/{slug}/website")
+    public ResponseEntity<ApiResponse<PanchayatWebsiteConfigDTO>> getPanchayatWebsite(@PathVariable String slug) {
+        log.info("PublicController.getPanchayatWebsite called - slug={}", slug);
+        List<in.gram.gov.app.egram_service.dto.response.PanchayatWebsiteSectionResponseDTO> sections = panchayatWebsiteFacade.getVisibleSections(slug);
+        PanchayatWebsiteConfigDTO config = new PanchayatWebsiteConfigDTO();
+        config.setSections(sections);
+        return ResponseEntity.ok(ApiResponse.success(config));
     }
 
 }
