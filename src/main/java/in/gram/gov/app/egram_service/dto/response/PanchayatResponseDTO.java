@@ -32,6 +32,7 @@ public class PanchayatResponseDTO {
     private String area;
     private Integer wards;
     private Integer establishedYear;
+    private String themeId;
     private PanchayatStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

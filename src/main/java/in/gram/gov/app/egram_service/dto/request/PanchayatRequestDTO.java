@@ -84,5 +84,8 @@ public class PanchayatRequestDTO {
 
     @Size(max = 500, message = "Hero image URL must not exceed 500 characters")
     private String heroImageUrl;
+
+    @Size(max = 50, message = "Theme ID must not exceed 50 characters")
+    private String themeId;
 }
 

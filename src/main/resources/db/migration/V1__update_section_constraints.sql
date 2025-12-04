@@ -39,10 +39,11 @@ CHECK (layout_type IN (
     'CONTAINED'
 ));
 
--- Create new section_type constraint with all enum values
+-- Create new section_type constraint with all enum values (including new professional types)
 ALTER TABLE panchayat_website_sections
 ADD CONSTRAINT panchayat_website_sections_section_type_check
 CHECK (section_type IN (
+    -- Legacy types
     'HERO',
     'STATS',
     'FEATURES',
@@ -61,7 +62,28 @@ CHECK (section_type IN (
     'TIMELINE',
     'TESTIMONIALS',
     'RICH_TEXT',
-    'MAP'
+    'MAP',
+    -- New professional types
+    'HERO_BANNER',
+    'PARAGRAPH_CONTENT',
+    'IMAGE_WITH_TEXT',
+    'SPLIT_CONTENT',
+    'IMAGE_GALLERY',
+    'VIDEO_SECTION',
+    'CARD_SECTION',
+    'FEATURES_GRID',
+    'STATISTICS_SECTION',
+    'TEAM_MEMBERS',
+    'FAQ_SECTION',
+    'FORM_SECTION',
+    'TESTIMONIALS_SECTION',
+    'TIMELINE_SECTION',
+    'NEWS_FEED',
+    'SCHEMES_LIST',
+    'CONTACT_INFO',
+    'MAP_SECTION',
+    'CALL_TO_ACTION',
+    'ACTIVE_PANCHAYATS_GRID'
 ));
 
 -- Update platform_landing_page_sections table constraints
@@ -101,10 +123,11 @@ CHECK (layout_type IN (
     'CONTAINED'
 ));
 
--- Create new section_type constraint with all enum values
+-- Create new section_type constraint with all enum values (including new professional types)
 ALTER TABLE platform_landing_page_sections
 ADD CONSTRAINT platform_landing_page_sections_section_type_check
 CHECK (section_type IN (
+    -- Legacy types
     'HERO',
     'STATS',
     'FEATURES',
@@ -123,6 +146,27 @@ CHECK (section_type IN (
     'TIMELINE',
     'TESTIMONIALS',
     'RICH_TEXT',
-    'MAP'
+    'MAP',
+    -- New professional types
+    'HERO_BANNER',
+    'PARAGRAPH_CONTENT',
+    'IMAGE_WITH_TEXT',
+    'SPLIT_CONTENT',
+    'IMAGE_GALLERY',
+    'VIDEO_SECTION',
+    'CARD_SECTION',
+    'FEATURES_GRID',
+    'STATISTICS_SECTION',
+    'TEAM_MEMBERS',
+    'FAQ_SECTION',
+    'FORM_SECTION',
+    'TESTIMONIALS_SECTION',
+    'TIMELINE_SECTION',
+    'NEWS_FEED',
+    'SCHEMES_LIST',
+    'CONTACT_INFO',
+    'MAP_SECTION',
+    'CALL_TO_ACTION',
+    'ACTIVE_PANCHAYATS_GRID'
 ));
 

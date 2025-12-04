@@ -37,6 +37,7 @@ public class PanchayatTransformer {
         dto.setArea(panchayat.getArea());
         dto.setWards(panchayat.getWards());
         dto.setEstablishedYear(panchayat.getEstablishedYear());
+        dto.setThemeId(panchayat.getThemeId());
         dto.setStatus(panchayat.getStatus());
         dto.setCreatedAt(panchayat.getCreatedAt());
         dto.setUpdatedAt(panchayat.getUpdatedAt());
@@ -74,6 +75,7 @@ public class PanchayatTransformer {
                 .establishedYear(dto.getEstablishedYear())
                 .logoUrl(dto.getLogoUrl())
                 .heroImageUrl(dto.getHeroImageUrl())
+                .themeId(dto.getThemeId())
                 .build();
     }
 
@@ -154,6 +156,9 @@ public class PanchayatTransformer {
         }
         if (dto.getHeroImageUrl() != null) {
             panchayat.setHeroImageUrl(dto.getHeroImageUrl());
+        }
+        if (dto.getThemeId() != null) {
+            panchayat.setThemeId(dto.getThemeId());
         }
     }
 }

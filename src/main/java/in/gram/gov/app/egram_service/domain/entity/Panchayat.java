@@ -122,6 +122,10 @@ public class Panchayat extends BaseEntity {
     @Column(name = "established_year")
     private Integer establishedYear;
 
+    @Size(max = 50)
+    @Column(name = "theme_id", length = 50)
+    private String themeId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
