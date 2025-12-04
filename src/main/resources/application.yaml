@@ -36,13 +36,13 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: true
+    enabled: false
     baseline-on-migrate: true
     locations: classpath:db/migration
     validate-on-migrate: true
 
 server:
-    port: 8082
+    port: 8080
 
 #logging:
 #  level:
@@ -51,6 +51,7 @@ server:
 #    com.egram: DEBUG
 
 # Cloud Storage Configuration
+
 cloud:
   storage:
     image:
@@ -58,25 +59,30 @@ cloud:
       max-height: 2560
       max-size-bytes: 10485760 # 10MB
       compression-quality: HIGH # HIGH, MEDIUM, LOW
-      target-size-bytes: 512000 # 500KB target
+      target-size-bytes: 102400  # 500KB target
 
-# Backblaze B2 Configuration
-backblaze:
-  b2:
-    enabled: ${BACKBLAZE_ENABLED:true}
-    app-key-id: ${BACKBLAZE_APP_KEY_ID:0057a65c2d160d00000000001}
-    app-key: ${BACKBLAZE_APP_KEY:K005Z5WOjx8SCcSvkR4UrJ0qLpLaGXg}
-    bucket-name: ${BACKBLAZE_BUCKET_NAME:egraamseva}
-    bucket-id: ${BACKBLAZE_BUCKET_ID:272ab6351ce2ed5196a00d10}
-    base-url: ${BACKBLAZE_BASE_URL:https://f001.backblazeb2.com}
-    s3-endpoint: ${BACKBLAZE_S3_ENDPOINT:https://s3.us-east-005.backblazeb2.com}
-    s3-region: ${BACKBLAZE_S3_REGION:us-east-005}
-    # S3-compatible API credentials - generate from Backblaze B2 > Account Settings > App Keys
-    # Create an "Application Key" with S3-compatible access
-    s3-access-key: ${BACKBLAZE_S3_ACCESS_KEY:0057a65c2d160d00000000001}
-    s3-secret-key: ${BACKBLAZE_S3_SECRET_KEY:K005Z5WOjx8SCcSvkR4UrJ0qLpLaGXg}
-    presigned-url-expiration-hours: ${BACKBLAZE_PRESIGNED_URL_EXPIRATION_HOURS:168} # 7 days (168 hours)
-
+# Cloudflare R2 Configuration
+cloudflare:
+  r2:
+    enabled: ${CLOUDFLARE_R2_ENABLED:true}
+    # Account ID from Cloudflare Dashboard > R2 > Overview
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID:72388a38a4a793a92ddc8014902a3c19}
+    # Access Key ID and Secret from Cloudflare Dashboard > R2 > Manage R2 API Tokens
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:588f23e2205e0e04da53b95df518fb32}
+    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:f77319d270c2b2137f3cebd1c15ab82f1b8cc48bdcc2b1e24208aecc0678cfdd}
+    # Bucket name
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME:egram}
+    # Optional: Custom endpoint (if not provided, will use: https://<account-id>.r2.cloudflarestorage.com)
+    endpoint: ${CLOUDFLARE_R2_ENDPOINT:}
+    # REQUIRED: Public domain for the bucket (R2 Custom Domain or R2.dev subdomain)
+    # Examples:
+    #   - https://pub-xxxxx.r2.dev (R2.dev subdomain)
+    #   - https://cdn.yourdomain.com (Custom domain)
+    # To set up:
+    #   1. Go to R2 Dashboard > Select your bucket > Settings
+    #   2. Under "Public Access", click "Allow Access" or "Connect Domain"
+    #   3. Use the R2.dev URL or configure a custom domain
+    public-domain: ${CLOUDFLARE_R2_PUBLIC_DOMAIN:https://pub-9d96ad7cc28648fa87573d5fd13292b1.r2.dev}
 ## Custom path for OpenAPI documentation
 #springdoc:
 #  api-docs:
