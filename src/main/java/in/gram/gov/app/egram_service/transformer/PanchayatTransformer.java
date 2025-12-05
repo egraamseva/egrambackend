@@ -10,7 +10,7 @@ public class PanchayatTransformer {
         if (panchayat == null) {
             return null;
         }
-        
+
         PanchayatResponseDTO dto = new PanchayatResponseDTO();
         dto.setPanchayatId(panchayat.getId());
         dto.setPanchayatName(panchayat.getPanchayatName());
@@ -41,7 +41,7 @@ public class PanchayatTransformer {
         dto.setStatus(panchayat.getStatus());
         dto.setCreatedAt(panchayat.getCreatedAt());
         dto.setUpdatedAt(panchayat.getUpdatedAt());
-        
+
         return dto;
     }
 
@@ -49,7 +49,7 @@ public class PanchayatTransformer {
         if (dto == null) {
             return null;
         }
-        
+
         return Panchayat.builder()
                 .panchayatName(dto.getPanchayatName())
                 .slug(dto.getSlug())
@@ -83,7 +83,7 @@ public class PanchayatTransformer {
         if (panchayat == null || dto == null) {
             return;
         }
-        
+
         // Only update fields that are provided (not null)
         if (dto.getPanchayatName() != null) {
             panchayat.setPanchayatName(dto.getPanchayatName());
@@ -156,6 +156,10 @@ public class PanchayatTransformer {
         }
         if (dto.getHeroImageUrl() != null) {
             panchayat.setHeroImageUrl(dto.getHeroImageUrl());
+        }
+
+        if (dto.getHeroImageUrl() == null) {
+            panchayat.setHeroImageUrl(null);
         }
         if (dto.getThemeId() != null) {
             panchayat.setThemeId(dto.getThemeId());
