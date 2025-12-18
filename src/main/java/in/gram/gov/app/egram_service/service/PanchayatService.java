@@ -111,7 +111,8 @@ public class PanchayatService {
     public void delete(Long id) {
         log.info("PanchayatService.delete called - id={}", id);
         Panchayat panchayat = findById(id);
-        panchayat.setStatus(PanchayatStatus.DELETED);
+        panchayat.setStatus(PanchayatStatus.INACTIVE);
         panchayatRepository.save(panchayat);
+        log.info("Panchayat {} marked as INACTIVE", id);
     }
 }

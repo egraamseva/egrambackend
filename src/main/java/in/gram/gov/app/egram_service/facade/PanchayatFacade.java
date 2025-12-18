@@ -79,7 +79,11 @@ public class PanchayatFacade {
     @Transactional
     public void delete(Long id) {
         log.info("PanchayatFacade.delete called - id={}", id);
+        // Mark panchayat as inactive
         panchayatService.delete(id);
+        // Asynchronously deactivate all users of this panchayat
+        userService.deactivateUsersByPanchayatIdAsync(id);
+        log.info("Panchayat {} marked as inactive and user deactivation process started", id);
     }
 
     public PanchayatStatsResponseDTO getStats(Long id) {

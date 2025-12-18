@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +80,30 @@ public class UserService {
         User user = findById(id);
         user.setStatus(status);
         userRepository.save(user);
+    }
+
+    /**
+     * Mark all users of a panchayat as inactive (async)
+     * This is used when a panchayat is deactivated
+     */
+    @Async
+    @Transactional
+    public void deactivateUsersByPanchayatIdAsync(Long panchayatId) {
+        log.info("UserService.deactivateUsersByPanchayatIdAsync called - panchayatId={}", panchayatId);
+        try {
+            Page<User> users = findByPanchayatId(panchayatId, Pageable.unpaged());
+            int count = 0;
+            for (User user : users) {
+                if (user.getStatus() != UserStatus.INACTIVE) {
+                    user.setStatus(UserStatus.INACTIVE);
+                    userRepository.save(user);
+                    count++;
+                }
+            }
+            log.info("Successfully deactivated {} users for panchayat {}", count, panchayatId);
+        } catch (Exception e) {
+            log.error("Error deactivating users for panchayat {}: {}", panchayatId, e.getMessage(), e);
+        }
     }
 
     public User findByPasswordResetToken(String token) {

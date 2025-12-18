@@ -11,6 +11,7 @@ public enum SectionType {
 
     // Content Sections
     PARAGRAPH_CONTENT,
+    CONTENT_SECTION, // Alias for PARAGRAPH_CONTENT (rich text content)
     IMAGE_WITH_TEXT,
     SPLIT_CONTENT,
 
@@ -20,6 +21,7 @@ public enum SectionType {
 
     // Card & Grid Sections
     CARD_SECTION,
+    CARD_GRID, // Flexible card grid with enhanced styling options
     FEATURES_GRID,
     STATISTICS_SECTION,
     TEAM_MEMBERS,

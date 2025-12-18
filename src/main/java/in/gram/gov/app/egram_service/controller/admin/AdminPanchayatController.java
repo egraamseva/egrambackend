@@ -69,7 +69,7 @@ public class AdminPanchayatController {
     public ResponseEntity<ApiResponse<Object>> delete(@PathVariable Long id) {
         log.info("AdminPanchayatController.delete called - id={}", id);
         panchayatFacade.delete(id);
-        return ResponseEntity.ok(ApiResponse.success("Panchayat deleted successfully", null));
+        return ResponseEntity.ok(ApiResponse.success("Panchayat deactivated successfully. Users are being deactivated in the background.", null));
     }
 
     @GetMapping("/{id}/stats")
