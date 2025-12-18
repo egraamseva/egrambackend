@@ -6,3 +6,6 @@ public enum PanchayatStatus {
     SUSPENDED,
     DELETED
 }
+
+//status
+
