@@ -45,5 +45,8 @@ public class PlatformSectionRequestDTO {
 
     // Compression quality for uploaded image (default: HIGH)
     private CompressionQuality compressionQuality = CompressionQuality.HIGH;
+
+    // Optional content item images (for items within the section content)
+    private java.util.List<MultipartFile> contentItemImages;
 }
 

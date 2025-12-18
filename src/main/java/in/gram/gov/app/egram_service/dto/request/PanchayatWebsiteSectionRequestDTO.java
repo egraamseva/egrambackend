@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Data
 public class PanchayatWebsiteSectionRequestDTO {
     // Note: @NotNull removed to allow partial updates. Validation is handled in facade for create operations.
@@ -45,5 +47,9 @@ public class PanchayatWebsiteSectionRequestDTO {
 
     // Compression quality for uploaded image (default: HIGH)
     private CompressionQuality compressionQuality = CompressionQuality.HIGH;
+
+    // Content item images - list of multipart files for content items
+    // These will be uploaded and URLs set in the content JSON
+    private List<MultipartFile> contentItemImages;
 }
 

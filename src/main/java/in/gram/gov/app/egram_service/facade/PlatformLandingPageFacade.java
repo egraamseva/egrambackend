@@ -17,8 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +32,7 @@ public class PlatformLandingPageFacade {
     private final PlatformLandingPageSectionService sectionService;
     private final ImageCompressionService imageCompressionService;
     private final CloudStorageService cloudStorageService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<PlatformSectionResponseDTO> getAllSections() {
         log.info("PlatformLandingPageFacade.getAllSections called");
@@ -80,6 +84,30 @@ public class PlatformLandingPageFacade {
             }
         }
 
+        // Process content item images if provided
+        if (request.getContentItemImages() != null && !request.getContentItemImages().isEmpty()) {
+            log.info("Received {} content item images for processing", request.getContentItemImages().size());
+            // Log details about each file
+            for (int i = 0; i < request.getContentItemImages().size(); i++) {
+                MultipartFile file = request.getContentItemImages().get(i);
+                if (file != null) {
+                    log.info("ContentItemImage[{}]: filename={}, size={}, contentType={}, isEmpty={}", 
+                            i, file.getOriginalFilename(), file.getSize(), file.getContentType(), file.isEmpty());
+                } else {
+                    log.warn("ContentItemImage[{}] is null", i);
+                }
+            }
+            String processedContent = processContentItemImages(request.getContent(), request.getContentItemImages(), request.getCompressionQuality());
+            if (processedContent != null) {
+                log.info("Content processed successfully, updating request content");
+                request.setContent(processedContent);
+            } else {
+                log.warn("Content processing returned null, keeping original content");
+            }
+        } else {
+            log.debug("No content item images provided");
+        }
+
         PlatformLandingPageSection section = PlatformLandingPageSectionTransformer.toEntity(request);
         section.setImageUrl(imageUrl);
         section.setImageKey(imageKey);
@@ -110,8 +138,20 @@ public class PlatformLandingPageFacade {
         if (request.getSubtitle() != null) {
             section.setSubtitle(request.getSubtitle());
         }
-        if (request.getContent() != null) {
-            section.setContent(request.getContent());
+        // Process content item images if provided
+        String contentToSet = request.getContent();
+        if (request.getContentItemImages() != null && !request.getContentItemImages().isEmpty()) {
+            String processedContent = processContentItemImages(
+                    request.getContent() != null ? request.getContent() : section.getContent(),
+                    request.getContentItemImages(),
+                    request.getCompressionQuality()
+            );
+            if (processedContent != null) {
+                contentToSet = processedContent;
+            }
+        }
+        if (contentToSet != null) {
+            section.setContent(contentToSet);
         }
         if (request.getLayoutType() != null) {
             section.setLayoutType(request.getLayoutType());
@@ -213,6 +253,19 @@ public class PlatformLandingPageFacade {
         }
 
         return PlatformLandingPageSectionTransformer.toDTO(section);
+    }
+
+    /**
+     * Generic image upload for content items
+     * Uploads an image and returns only the URL without associating it with a section
+     */
+    public String uploadImageGeneric(MultipartFile imageFile, CompressionQuality compressionQuality) {
+        log.info("PlatformLandingPageFacade.uploadImageGeneric called");
+        ImageCompressionDTO uploadResult = processAndUploadImage(imageFile, compressionQuality);
+        if (uploadResult != null) {
+            return uploadResult.getBackblazeFileUrl();
+        }
+        return null;
     }
 
     private ImageCompressionDTO processAndUploadImage(MultipartFile imageFile, CompressionQuality compressionQuality) {
@@ -340,6 +393,147 @@ public class PlatformLandingPageFacade {
         } catch (Exception e) {
             log.error("Error extracting file key from URL: {}", mediaUrl, e);
             return null;
+        }
+    }
+
+    /**
+     * Process content item images: upload images and update content JSON
+     * Matches images to items with null/empty image fields in order
+     * 
+     * @param contentJson JSON string containing content with items array
+     * @param contentItemImages List of multipart files to upload
+     * @param compressionQuality Compression quality for uploaded images
+     * @return Updated content JSON string with image URLs, or null if no processing needed
+     */
+    private String processContentItemImages(String contentJson, List<MultipartFile> contentItemImages, CompressionQuality compressionQuality) {
+        if (contentItemImages == null || contentItemImages.isEmpty()) {
+            log.debug("No content item images provided, skipping processing");
+            return null;
+        }
+
+        if (contentJson == null || contentJson.trim().isEmpty()) {
+            log.warn("Content is null or empty, cannot process content item images");
+            return null;
+        }
+
+        log.info("Processing content item images. Content length: {}, Images count: {}", 
+                contentJson.length(), contentItemImages.size());
+        log.debug("Content JSON (first 200 chars): {}", 
+                contentJson.length() > 200 ? contentJson.substring(0, 200) : contentJson);
+
+        try {
+            // Parse content JSON - handle both string and already parsed object
+            JsonNode contentNode;
+            if (contentJson.trim().startsWith("{")) {
+                // It's a JSON string, parse it
+                contentNode = objectMapper.readTree(contentJson);
+            } else {
+                log.warn("Content does not appear to be valid JSON, attempting to parse anyway");
+                contentNode = objectMapper.readTree(contentJson);
+            }
+            
+            // Check if content has items array
+            JsonNode itemsNode = contentNode.get("items");
+            if (itemsNode == null || !itemsNode.isArray()) {
+                log.warn("Content does not have items array, skipping content item image processing");
+                return null;
+            }
+
+            // Find items that need images (image is null, empty, or missing)
+            List<Integer> itemsNeedingImages = new ArrayList<>();
+            for (int i = 0; i < itemsNode.size(); i++) {
+                JsonNode item = itemsNode.get(i);
+                JsonNode imageNode = item.get("image");
+                if (imageNode == null || imageNode.isNull() || 
+                    (imageNode.isTextual() && (imageNode.asText().isEmpty() || imageNode.asText().equals("null")))) {
+                    itemsNeedingImages.add(i);
+                }
+            }
+
+            if (itemsNeedingImages.isEmpty()) {
+                log.info("No items need images, skipping content item image processing");
+                return null;
+            }
+
+            log.info("Processing {} content item images for {} items needing images", 
+                    contentItemImages.size(), itemsNeedingImages.size());
+            log.info("Items needing images (indices): {}", itemsNeedingImages);
+
+            // Verify we have the right number of images
+            if (contentItemImages.size() != itemsNeedingImages.size()) {
+                log.warn("Mismatch: {} images provided but {} items need images. This may cause incorrect matching.", 
+                        contentItemImages.size(), itemsNeedingImages.size());
+            }
+
+            // Upload images and update content - match in order
+            int imageIndex = 0;
+            for (int itemIndex : itemsNeedingImages) {
+                if (imageIndex >= contentItemImages.size()) {
+                    log.warn("Not enough images provided. Need {} but only have {}", 
+                            itemsNeedingImages.size(), contentItemImages.size());
+                    break;
+                }
+
+                MultipartFile imageFile = contentItemImages.get(imageIndex);
+                if (imageFile == null || imageFile.isEmpty()) {
+                    log.warn("Skipping empty image file at index {}", imageIndex);
+                    imageIndex++;
+                    continue;
+                }
+                
+                // Additional validation: check file size and name
+                if (imageFile.getSize() == 0) {
+                    log.warn("Skipping image file at index {} - file size is 0", imageIndex);
+                    imageIndex++;
+                    continue;
+                }
+                
+                if (imageFile.getOriginalFilename() == null || imageFile.getOriginalFilename().isEmpty()) {
+                    log.warn("Skipping image file at index {} - no filename", imageIndex);
+                    imageIndex++;
+                    continue;
+                }
+
+                log.info("Processing image {} for item at index {} (filename: {}, size: {} bytes, contentType: {})", 
+                        imageIndex, itemIndex, imageFile.getOriginalFilename(), 
+                        imageFile.getSize(), imageFile.getContentType());
+
+                // Upload image with better error handling
+                try {
+                    ImageCompressionDTO uploadResult = processAndUploadImage(imageFile, compressionQuality);
+                    if (uploadResult != null && uploadResult.getBackblazeFileUrl() != null) {
+                        String imageUrl = uploadResult.getBackblazeFileUrl();
+                        log.info("Successfully uploaded image for item at index {}: {}", itemIndex, imageUrl);
+                        
+                        // Update the item's image field
+                        JsonNode item = itemsNode.get(itemIndex);
+                        if (item != null && item.isObject()) {
+                            ((com.fasterxml.jackson.databind.node.ObjectNode) item).put("image", imageUrl);
+                            log.info("Updated item at index {} with image URL", itemIndex);
+                        } else {
+                            log.warn("Item at index {} is null or not an object, cannot update", itemIndex);
+                        }
+                    } else {
+                        log.error("Failed to upload image for item at index {} - uploadResult is null or has no URL", itemIndex);
+                    }
+                } catch (Exception e) {
+                    log.error("Exception while uploading image for item at index {}: {} - continuing with next image", 
+                            itemIndex, e.getMessage(), e);
+                    // Continue with next image instead of failing entire operation
+                }
+
+                imageIndex++;
+            }
+            
+            log.info("Finished processing content item images. Updated {} items.", imageIndex);
+
+            // Convert back to JSON string
+            return objectMapper.writeValueAsString(contentNode);
+
+        } catch (Exception e) {
+            log.error("Error processing content item images", e);
+            // Return original content if processing fails
+            return contentJson;
         }
     }
 }

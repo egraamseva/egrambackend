@@ -103,10 +103,177 @@ public class ImageCompressionService {
             log.info("Starting compression for file: {}, size: {} bytes, quality: {}",
                     originalFileName, originalFileSize, quality.getDescription());
 
-            // Read original image
-            BufferedImage originalImage = Thumbnails.of(new ByteArrayInputStream(file.getBytes()))
-                    .size(maxWidth, maxHeight)
-                    .asBufferedImage();
+            // Read file bytes with error handling
+            byte[] fileBytes;
+            try {
+                fileBytes = file.getBytes();
+                if (fileBytes == null || fileBytes.length == 0) {
+                    throw new ImageUploadException("File bytes are null or empty");
+                }
+                log.info("Successfully read {} bytes from file: {}", fileBytes.length, originalFileName);
+                
+                // Log first few bytes for debugging
+                if (fileBytes.length >= 4) {
+                    String hexBytes = String.format("%02X %02X %02X %02X", 
+                            fileBytes[0] & 0xFF, fileBytes[1] & 0xFF, 
+                            fileBytes[2] & 0xFF, fileBytes[3] & 0xFF);
+                    log.info("First 4 bytes (hex): {}", hexBytes);
+                }
+                
+                // Check if file might be base64 encoded (starts with data: or is all printable ASCII)
+                if (fileBytes.length > 0 && (fileBytes[0] == 'd' || fileBytes[0] == 'D')) {
+                    String firstChars = new String(fileBytes, 0, Math.min(20, fileBytes.length));
+                    if (firstChars.startsWith("data:image/")) {
+                        log.error("File appears to be base64 encoded data URI. Expected raw image bytes.");
+                        throw new ImageUploadException("Image file appears to be base64 encoded. Please send raw image bytes.");
+                    }
+                }
+            } catch (IOException e) {
+                log.error("Failed to read bytes from file: {}", originalFileName, e);
+                throw new ImageUploadException("Failed to read file bytes: " + e.getMessage(), e);
+            }
+
+            // Read original image with better error handling
+            BufferedImage originalImage;
+            try {
+                // First, try to verify the file bytes start with valid image magic bytes
+                if (fileBytes.length < 4) {
+                    throw new ImageUploadException("File is too small to be a valid image");
+                }
+                
+                // Check for common image format magic bytes and detect actual format
+                String detectedFormat = null;
+                boolean isValidImage = false;
+                
+                if (fileBytes[0] == (byte)0xFF && fileBytes[1] == (byte)0xD8) {
+                    // JPEG
+                    detectedFormat = "JPEG";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x89 && fileBytes[1] == (byte)0x50 && 
+                          fileBytes[2] == (byte)0x4E && fileBytes[3] == (byte)0x47) {
+                    // PNG
+                    detectedFormat = "PNG";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x47 && fileBytes[1] == (byte)0x49 && 
+                          fileBytes[2] == (byte)0x46) {
+                    // GIF
+                    detectedFormat = "GIF";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x52 && fileBytes[1] == (byte)0x49 && 
+                          fileBytes[2] == (byte)0x46 && fileBytes[3] == (byte)0x46) {
+                    // RIFF header - could be WebP or other RIFF format
+                    if (fileBytes.length > 11 &&
+                        fileBytes[8] == (byte)0x57 && fileBytes[9] == (byte)0x45 && 
+                        fileBytes[10] == (byte)0x42 && fileBytes[11] == (byte)0x50) {
+                        // WebP
+                        detectedFormat = "WebP";
+                        isValidImage = true;
+                    } else {
+                        // RIFF but not WebP - might be incomplete or corrupted
+                        detectedFormat = "RIFF (not WebP)";
+                        log.warn("File has RIFF header but missing WebP signature. File: {}, Size: {} bytes", 
+                                originalFileName, fileBytes.length);
+                    }
+                }
+                
+                // Check for format mismatch between content type and detected format
+                if (detectedFormat != null && contentType != null) {
+                    String expectedFormat = contentType.contains("jpeg") || contentType.contains("jpg") ? "JPEG" :
+                                           contentType.contains("png") ? "PNG" :
+                                           contentType.contains("gif") ? "GIF" :
+                                           contentType.contains("webp") ? "WebP" : null;
+                    
+                    if (expectedFormat != null && !detectedFormat.equals(expectedFormat) && 
+                        !detectedFormat.startsWith("RIFF")) {
+                        log.warn("Format mismatch detected. File: {}, Content-Type: {} (expects {}), Actual format: {}", 
+                                originalFileName, contentType, expectedFormat, detectedFormat);
+                    }
+                }
+                
+                if (!isValidImage) {
+                    String hexBytes = String.format("%02X %02X %02X %02X", 
+                            fileBytes[0] & 0xFF, fileBytes[1] & 0xFF, 
+                            fileBytes[2] & 0xFF, fileBytes[3] & 0xFF);
+                    String formatInfo = detectedFormat != null ? 
+                            String.format(" Detected format: %s", detectedFormat) : "";
+                    log.error("File does not appear to be a valid image based on magic bytes. File: {}, First bytes: {}, Content-Type: {}.{}", 
+                            originalFileName, hexBytes, contentType, formatInfo);
+                    throw new ImageUploadException(
+                            String.format("Invalid image format. File '%s' does not have valid image magic bytes. First bytes: %s. Content-Type: %s.%s The file may be corrupted, incomplete, or not a valid image file.", 
+                            originalFileName, hexBytes, contentType, formatInfo));
+                }
+                
+                log.info("Detected image format: {} for file: {} (Content-Type: {})", 
+                        detectedFormat, originalFileName, contentType);
+                
+                // Try to read image with Thumbnailator
+                try {
+                    originalImage = Thumbnails.of(new ByteArrayInputStream(fileBytes))
+                            .size(maxWidth, maxHeight)
+                            .asBufferedImage();
+                } catch (net.coobird.thumbnailator.tasks.UnsupportedFormatException e) {
+                    // If Thumbnailator fails, try Java ImageIO as fallback
+                    log.warn("Thumbnailator failed to read image, trying Java ImageIO as fallback. File: {}, Detected format: {}", 
+                            originalFileName, detectedFormat);
+                    try {
+                        javax.imageio.ImageIO.setUseCache(false);
+                        originalImage = javax.imageio.ImageIO.read(new ByteArrayInputStream(fileBytes));
+                        if (originalImage == null) {
+                            // Check if it's a format mismatch issue
+                            String formatMismatchMsg = "";
+                            if (detectedFormat != null && contentType != null) {
+                                boolean isMismatch = (detectedFormat.equals("WebP") && contentType.contains("jpeg")) ||
+                                                    (detectedFormat.equals("JPEG") && contentType.contains("webp")) ||
+                                                    (detectedFormat.startsWith("RIFF") && !contentType.contains("webp"));
+                                if (isMismatch) {
+                                    formatMismatchMsg = String.format(" Format mismatch: file appears to be %s but Content-Type is %s.", 
+                                            detectedFormat, contentType);
+                                }
+                            }
+                            throw new ImageUploadException(
+                                    String.format("Java ImageIO failed to read the image. The file may be corrupted, incomplete, or in an unsupported format.%s Please ensure the file is a valid, complete image file.", 
+                                    formatMismatchMsg));
+                        }
+                        // Resize if needed
+                        if (originalImage.getWidth() > maxWidth || originalImage.getHeight() > maxHeight) {
+                            double scaleX = (double) maxWidth / originalImage.getWidth();
+                            double scaleY = (double) maxHeight / originalImage.getHeight();
+                            double scale = Math.min(scaleX, scaleY);
+                            int newWidth = (int) (originalImage.getWidth() * scale);
+                            int newHeight = (int) (originalImage.getHeight() * scale);
+                            originalImage = Thumbnails.of(originalImage)
+                                    .size(newWidth, newHeight)
+                                    .asBufferedImage();
+                        }
+                        log.info("Successfully read image using Java ImageIO fallback. Dimensions: {}x{}", 
+                                originalImage.getWidth(), originalImage.getHeight());
+                    } catch (ImageUploadException imgEx) {
+                        // Re-throw ImageUploadException as-is
+                        throw imgEx;
+                    } catch (Exception ioException) {
+                        // Check for format mismatch
+                        String formatMismatchMsg = "";
+                        if (detectedFormat != null && contentType != null) {
+                            boolean isMismatch = (detectedFormat.equals("WebP") && contentType.contains("jpeg")) ||
+                                                (detectedFormat.equals("JPEG") && contentType.contains("webp")) ||
+                                                (detectedFormat.startsWith("RIFF") && !contentType.contains("webp"));
+                            if (isMismatch) {
+                                formatMismatchMsg = String.format(" CRITICAL: Format mismatch detected - file appears to be %s but Content-Type is %s. The file extension may be incorrect.", 
+                                        detectedFormat, contentType);
+                            }
+                        }
+                        log.error("Both Thumbnailator and Java ImageIO failed to read image. File: {}, Size: {} bytes, Content-Type: {}, Detected format: {}, Error: {}", 
+                                originalFileName, fileBytes.length, contentType, detectedFormat, ioException.getMessage(), ioException);
+                        throw new ImageUploadException(
+                                String.format("Failed to read image data. The file '%s' may be corrupted, incomplete, or in an unsupported format.%s Thumbnailator error: %s, ImageIO error: %s. Please ensure the file is a valid, complete image file and the file extension matches the actual format.", 
+                                originalFileName, formatMismatchMsg, e.getMessage(), ioException.getMessage()), e);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to read image from bytes. File: {}, Size: {} bytes, ContentType: {}, Error: {}", 
+                        originalFileName, fileBytes.length, contentType, e.getMessage(), e);
+                throw new ImageUploadException("Failed to read image data. The file may be corrupted or in an unsupported format: " + e.getMessage(), e);
+            }
 
             int width = originalImage.getWidth();
             int height = originalImage.getHeight();
@@ -238,10 +405,163 @@ public class ImageCompressionService {
 
             log.info("Generating compressed image stream for: {}", originalFileName);
 
-            // Read original image
-            BufferedImage originalImage = Thumbnails.of(new ByteArrayInputStream(file.getBytes()))
-                    .size(maxWidth, maxHeight)
-                    .asBufferedImage();
+            // Read file bytes with error handling
+            byte[] fileBytes;
+            try {
+                fileBytes = file.getBytes();
+                if (fileBytes == null || fileBytes.length == 0) {
+                    throw new ImageUploadException("File bytes are null or empty");
+                }
+                log.info("Successfully read {} bytes from file for stream generation: {}", fileBytes.length, originalFileName);
+            } catch (IOException e) {
+                log.error("Failed to read bytes from file: {}", originalFileName, e);
+                throw new ImageUploadException("Failed to read file bytes: " + e.getMessage(), e);
+            }
+
+            // Read original image with better error handling
+            BufferedImage originalImage;
+            try {
+                // First, try to verify the file bytes start with valid image magic bytes
+                if (fileBytes.length < 4) {
+                    throw new ImageUploadException("File is too small to be a valid image");
+                }
+                
+                // Check for common image format magic bytes and detect actual format
+                String detectedFormat = null;
+                boolean isValidImage = false;
+                
+                if (fileBytes[0] == (byte)0xFF && fileBytes[1] == (byte)0xD8) {
+                    // JPEG
+                    detectedFormat = "JPEG";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x89 && fileBytes[1] == (byte)0x50 && 
+                          fileBytes[2] == (byte)0x4E && fileBytes[3] == (byte)0x47) {
+                    // PNG
+                    detectedFormat = "PNG";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x47 && fileBytes[1] == (byte)0x49 && 
+                          fileBytes[2] == (byte)0x46) {
+                    // GIF
+                    detectedFormat = "GIF";
+                    isValidImage = true;
+                } else if (fileBytes[0] == (byte)0x52 && fileBytes[1] == (byte)0x49 && 
+                          fileBytes[2] == (byte)0x46 && fileBytes[3] == (byte)0x46) {
+                    // RIFF header - could be WebP or other RIFF format
+                    if (fileBytes.length > 11 &&
+                        fileBytes[8] == (byte)0x57 && fileBytes[9] == (byte)0x45 && 
+                        fileBytes[10] == (byte)0x42 && fileBytes[11] == (byte)0x50) {
+                        // WebP
+                        detectedFormat = "WebP";
+                        isValidImage = true;
+                    } else {
+                        // RIFF but not WebP - might be incomplete or corrupted
+                        detectedFormat = "RIFF (not WebP)";
+                        log.warn("File has RIFF header but missing WebP signature for stream. File: {}, Size: {} bytes", 
+                                originalFileName, fileBytes.length);
+                    }
+                }
+                
+                // Check for format mismatch between content type and detected format
+                if (detectedFormat != null && contentType != null) {
+                    String expectedFormat = contentType.contains("jpeg") || contentType.contains("jpg") ? "JPEG" :
+                                           contentType.contains("png") ? "PNG" :
+                                           contentType.contains("gif") ? "GIF" :
+                                           contentType.contains("webp") ? "WebP" : null;
+                    
+                    if (expectedFormat != null && !detectedFormat.equals(expectedFormat) && 
+                        !detectedFormat.startsWith("RIFF")) {
+                        log.warn("Format mismatch detected for stream. File: {}, Content-Type: {} (expects {}), Actual format: {}", 
+                                originalFileName, contentType, expectedFormat, detectedFormat);
+                    }
+                }
+                
+                if (!isValidImage) {
+                    String hexBytes = String.format("%02X %02X %02X %02X", 
+                            fileBytes[0] & 0xFF, fileBytes[1] & 0xFF, 
+                            fileBytes[2] & 0xFF, fileBytes[3] & 0xFF);
+                    String formatInfo = detectedFormat != null ? 
+                            String.format(" Detected format: %s", detectedFormat) : "";
+                    log.error("File does not appear to be a valid image based on magic bytes for stream. File: {}, First bytes: {}, Content-Type: {}.{}", 
+                            originalFileName, hexBytes, contentType, formatInfo);
+                    throw new ImageUploadException(
+                            String.format("Invalid image format. File '%s' does not have valid image magic bytes. First bytes: %s. Content-Type: %s.%s The file may be corrupted, incomplete, or not a valid image file.", 
+                            originalFileName, hexBytes, contentType, formatInfo));
+                }
+                
+                log.info("Detected image format for stream: {} for file: {} (Content-Type: {})", 
+                        detectedFormat, originalFileName, contentType);
+                
+                // Try to read image with Thumbnailator
+                try {
+                    originalImage = Thumbnails.of(new ByteArrayInputStream(fileBytes))
+                            .size(maxWidth, maxHeight)
+                            .asBufferedImage();
+                } catch (net.coobird.thumbnailator.tasks.UnsupportedFormatException e) {
+                    // If Thumbnailator fails, try Java ImageIO as fallback
+                    log.warn("Thumbnailator failed to read image for stream, trying Java ImageIO as fallback. File: {}, Detected format: {}", 
+                            originalFileName, detectedFormat);
+                    try {
+                        javax.imageio.ImageIO.setUseCache(false);
+                        originalImage = javax.imageio.ImageIO.read(new ByteArrayInputStream(fileBytes));
+                        if (originalImage == null) {
+                            // Check if it's a format mismatch issue
+                            String formatMismatchMsg = "";
+                            if (detectedFormat != null && contentType != null) {
+                                boolean isMismatch = (detectedFormat.equals("WebP") && contentType.contains("jpeg")) ||
+                                                    (detectedFormat.equals("JPEG") && contentType.contains("webp")) ||
+                                                    (detectedFormat.startsWith("RIFF") && !contentType.contains("webp"));
+                                if (isMismatch) {
+                                    formatMismatchMsg = String.format(" Format mismatch: file appears to be %s but Content-Type is %s.", 
+                                            detectedFormat, contentType);
+                                }
+                            }
+                            throw new ImageUploadException(
+                                    String.format("Java ImageIO failed to read the image. The file may be corrupted, incomplete, or in an unsupported format.%s Please ensure the file is a valid, complete image file.", 
+                                    formatMismatchMsg));
+                        }
+                        // Resize if needed
+                        if (originalImage.getWidth() > maxWidth || originalImage.getHeight() > maxHeight) {
+                            double scaleX = (double) maxWidth / originalImage.getWidth();
+                            double scaleY = (double) maxHeight / originalImage.getHeight();
+                            double scale = Math.min(scaleX, scaleY);
+                            int newWidth = (int) (originalImage.getWidth() * scale);
+                            int newHeight = (int) (originalImage.getHeight() * scale);
+                            originalImage = Thumbnails.of(originalImage)
+                                    .size(newWidth, newHeight)
+                                    .asBufferedImage();
+                        }
+                        log.info("Successfully read image using Java ImageIO fallback for stream. Dimensions: {}x{}", 
+                                originalImage.getWidth(), originalImage.getHeight());
+                    } catch (ImageUploadException imgEx) {
+                        // Re-throw ImageUploadException as-is
+                        throw imgEx;
+                    } catch (Exception ioException) {
+                        // Check for format mismatch
+                        String formatMismatchMsg = "";
+                        if (detectedFormat != null && contentType != null) {
+                            boolean isMismatch = (detectedFormat.equals("WebP") && contentType.contains("jpeg")) ||
+                                                (detectedFormat.equals("JPEG") && contentType.contains("webp")) ||
+                                                (detectedFormat.startsWith("RIFF") && !contentType.contains("webp"));
+                            if (isMismatch) {
+                                formatMismatchMsg = String.format(" CRITICAL: Format mismatch detected - file appears to be %s but Content-Type is %s. The file extension may be incorrect.", 
+                                        detectedFormat, contentType);
+                            }
+                        }
+                        log.error("Both Thumbnailator and Java ImageIO failed to read image for stream. File: {}, Size: {} bytes, Content-Type: {}, Detected format: {}, Error: {}", 
+                                originalFileName, fileBytes.length, contentType, detectedFormat, ioException.getMessage(), ioException);
+                        throw new ImageUploadException(
+                                String.format("Failed to read image data. The file '%s' may be corrupted, incomplete, or in an unsupported format.%s Thumbnailator error: %s, ImageIO error: %s. Please ensure the file is a valid, complete image file and the file extension matches the actual format.", 
+                                originalFileName, formatMismatchMsg, e.getMessage(), ioException.getMessage()), e);
+                    }
+                }
+            } catch (ImageUploadException e) {
+                // Re-throw ImageUploadException as-is
+                throw e;
+            } catch (Exception e) {
+                log.error("Failed to read image from bytes for stream. File: {}, Size: {} bytes, ContentType: {}, Error: {}", 
+                        originalFileName, fileBytes.length, contentType, e.getMessage(), e);
+                throw new ImageUploadException("Failed to read image data. The file may be corrupted or in an unsupported format: " + e.getMessage(), e);
+            }
 
             int width = originalImage.getWidth();
             int height = originalImage.getHeight();

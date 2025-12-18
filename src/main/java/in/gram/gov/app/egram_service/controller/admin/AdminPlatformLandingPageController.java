@@ -49,9 +49,13 @@ public class AdminPlatformLandingPageController {
             @RequestParam(required = false) String imageKey,
             @RequestParam(required = false) String metadata,
             @RequestParam(required = false) MultipartFile imageFile,
-            @RequestParam(required = false, defaultValue = "HIGH") String compressionQuality) {
+            @RequestParam(required = false, defaultValue = "HIGH") String compressionQuality,
+            @RequestParam(required = false) List<MultipartFile> contentItemImages) {
         
         log.info("AdminPlatformLandingPageController.createSection called");
+        if (contentItemImages != null && !contentItemImages.isEmpty()) {
+            log.info("Received {} content item images for platform section creation", contentItemImages.size());
+        }
         
         PlatformSectionRequestDTO request = new PlatformSectionRequestDTO();
         if (sectionType != null) {
@@ -71,6 +75,7 @@ public class AdminPlatformLandingPageController {
         request.setImageKey(imageKey);
         request.setMetadata(metadata);
         request.setImageFile(imageFile);
+        request.setContentItemImages(contentItemImages);
         try {
             request.setCompressionQuality(CompressionQuality.valueOf(compressionQuality.toUpperCase()));
         } catch (Exception e) {
@@ -89,11 +94,71 @@ public class AdminPlatformLandingPageController {
         return ResponseEntity.ok(ApiResponse.success("Section created successfully", response));
     }
 
-    @PutMapping("/sections/{id}")
+    @PutMapping(value = "/sections/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PlatformSectionResponseDTO>> updateSection(
             @PathVariable Long id,
-            @Valid @RequestBody PlatformSectionRequestDTO request) {
+            @RequestParam(required = false) String sectionType,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String subtitle,
+            @RequestParam(required = false) String content,
+            @RequestParam(required = false) String layoutType,
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) Boolean isVisible,
+            @RequestParam(required = false) String backgroundColor,
+            @RequestParam(required = false) String textColor,
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String imageKey,
+            @RequestParam(required = false) String metadata,
+            @RequestParam(required = false) MultipartFile imageFile,
+            @RequestParam(required = false, defaultValue = "HIGH") String compressionQuality,
+            @RequestParam(required = false) List<MultipartFile> contentItemImages) {
         log.info("AdminPlatformLandingPageController.updateSection called - id={}", id);
+        if (contentItemImages != null && !contentItemImages.isEmpty()) {
+            log.info("Received {} content item images for platform section update", contentItemImages.size());
+        }
+        
+        PlatformSectionRequestDTO request = new PlatformSectionRequestDTO();
+        if (sectionType != null) {
+            try {
+                request.setSectionType(in.gram.gov.app.egram_service.constants.enums.SectionType.valueOf(sectionType));
+            } catch (Exception e) {
+                log.warn("Invalid sectionType: {}", sectionType);
+            }
+        }
+        request.setTitle(title);
+        request.setSubtitle(subtitle);
+        request.setContent(content);
+        if (layoutType != null) {
+            try {
+                request.setLayoutType(in.gram.gov.app.egram_service.constants.enums.LayoutType.valueOf(layoutType));
+            } catch (Exception e) {
+                log.warn("Invalid layoutType: {}", layoutType);
+            }
+        }
+        request.setDisplayOrder(displayOrder);
+        request.setIsVisible(isVisible);
+        request.setBackgroundColor(backgroundColor);
+        request.setTextColor(textColor);
+        request.setImageUrl(imageUrl);
+        request.setImageKey(imageKey);
+        request.setMetadata(metadata);
+        request.setImageFile(imageFile);
+        request.setContentItemImages(contentItemImages);
+        try {
+            request.setCompressionQuality(CompressionQuality.valueOf(compressionQuality.toUpperCase()));
+        } catch (Exception e) {
+            request.setCompressionQuality(CompressionQuality.HIGH);
+        }
+        
+        PlatformSectionResponseDTO response = facade.updateSection(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Section updated successfully", response));
+    }
+
+    @PutMapping(value = "/sections/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<PlatformSectionResponseDTO>> updateSectionJson(
+            @PathVariable Long id,
+            @Valid @RequestBody PlatformSectionRequestDTO request) {
+        log.info("AdminPlatformLandingPageController.updateSectionJson called - id={}", id);
         PlatformSectionResponseDTO response = facade.updateSection(id, request);
         return ResponseEntity.ok(ApiResponse.success("Section updated successfully", response));
     }
@@ -137,6 +202,36 @@ public class AdminPlatformLandingPageController {
         }
         PlatformSectionResponseDTO response = facade.uploadImage(id, imageFile, quality);
         return ResponseEntity.ok(ApiResponse.success("Image uploaded successfully", response));
+    }
+
+    /**
+     * Generic image upload endpoint for content items
+     * Uploads an image and returns only the image URL without associating it with a section
+     */
+    @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImageGeneric(
+            @RequestParam MultipartFile imageFile,
+            @RequestParam(required = false, defaultValue = "HIGH") String compressionQuality) {
+        log.info("AdminPlatformLandingPageController.uploadImageGeneric called");
+        CompressionQuality quality;
+        try {
+            quality = CompressionQuality.valueOf(compressionQuality.toUpperCase());
+        } catch (Exception e) {
+            quality = CompressionQuality.HIGH;
+        }
+        String imageUrl = facade.uploadImageGeneric(imageFile, quality);
+        ImageUploadResponse response = new ImageUploadResponse();
+        response.setImageUrl(imageUrl);
+        return ResponseEntity.ok(ApiResponse.success("Image uploaded successfully", response));
+    }
+
+    /**
+     * Simple response DTO for generic image upload
+     */
+    public static class ImageUploadResponse {
+        private String imageUrl;
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     }
 }
 
