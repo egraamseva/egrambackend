@@ -60,11 +60,13 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.OPTIONS).permitAll()
                                 .requestMatchers("/api/v1/public/**").permitAll()
                                 .requestMatchers("/api/v1/auth/**").permitAll()
+                                .requestMatchers("/api/v1/auth/google/callback").permitAll() // OAuth callback
                                 .requestMatchers("/v1/public/**").permitAll()
                                 .requestMatchers("/v1/auth/**").permitAll()
                                 .requestMatchers("/api/v1/admin/**").permitAll()
                                 .requestMatchers("/api/v1/files/**").permitAll()
                                 .requestMatchers("/api/v1/panchayat/**").permitAll()
+                                .requestMatchers("/api/v1/consent/**").authenticated() // Consent requires auth
                                 .requestMatchers(AUTH_WHITELIST).permitAll()
 //                        .requestMatchers("/api/v1/admin/**").hasRole("SUPER_ADMIN")
 //                        .requestMatchers("/api/v1/panchayat/**").hasRole("PANCHAYAT_ADMIN")

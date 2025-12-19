@@ -3,8 +3,8 @@ spring:
     name: egram-platform
   datasource:
     url: jdbc:postgresql://hopper.proxy.rlwy.net:36839/railway?currentSchema=egram_service
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:AtVnhUMreDavYkWUDuNHaaLvnMMYFnyM}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -66,23 +66,32 @@ cloudflare:
   r2:
     enabled: ${CLOUDFLARE_R2_ENABLED:true}
     # Account ID from Cloudflare Dashboard > R2 > Overview
-    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID:72388a38a4a793a92ddc8014902a3c19}
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID:}
     # Access Key ID and Secret from Cloudflare Dashboard > R2 > Manage R2 API Tokens
-    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:588f23e2205e0e04da53b95df518fb32}
-    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:f77319d270c2b2137f3cebd1c15ab82f1b8cc48bdcc2b1e24208aecc0678cfdd}
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:}
+    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:}
     # Bucket name
     bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME:egram}
     # Optional: Custom endpoint (if not provided, will use: https://<account-id>.r2.cloudflarestorage.com)
     endpoint: ${CLOUDFLARE_R2_ENDPOINT:}
-    # REQUIRED: Public domain for the bucket (R2 Custom Domain or R2.dev subdomain)
-    # Examples:
-    #   - https://pub-xxxxx.r2.dev (R2.dev subdomain)
-    #   - https://cdn.yourdomain.com (Custom domain)
-    # To set up:
-    #   1. Go to R2 Dashboard > Select your bucket > Settings
-    #   2. Under "Public Access", click "Allow Access" or "Connect Domain"
-    #   3. Use the R2.dev URL or configure a custom domain
-    public-domain: ${CLOUDFLARE_R2_PUBLIC_DOMAIN:https://pub-9d96ad7cc28648fa87573d5fd13292b1.r2.dev}
+    public-domain: ${CLOUDFLARE_R2_PUBLIC_DOMAIN:}
+
+# Google OAuth Configuration
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:${BASE_URL:http://localhost:8080}/api/v1/auth/google/callback}
+    encryption-key: ${GOOGLE_ENCRYPTION_KEY:} # Base64 encoded 256-bit AES key
+    frontend-url: ${FRONTEND_URL:http://localhost:5173} # Frontend URL for OAuth redirects
+  drive:
+    scope: https://www.googleapis.com/auth/drive.file
+
+# Document Configuration
+document:
+  allowed-types: application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+  max-size-mb: 10
+
 ## Custom path for OpenAPI documentation
 #springdoc:
 #  api-docs:

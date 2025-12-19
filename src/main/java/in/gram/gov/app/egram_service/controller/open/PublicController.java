@@ -14,8 +14,11 @@ import in.gram.gov.app.egram_service.dto.response.SchemeResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.UserResponseDTO;
 import in.gram.gov.app.egram_service.dto.response.PanchayatWebsiteConfigDTO;
 import in.gram.gov.app.egram_service.dto.response.PlatformLandingPageConfigDTO;
+import in.gram.gov.app.egram_service.constants.enums.DocumentCategory;
+import in.gram.gov.app.egram_service.dto.response.DocumentResponseDTO;
 import in.gram.gov.app.egram_service.facade.AlbumFacadeNew;
 import in.gram.gov.app.egram_service.facade.AnnouncementFacade;
+import in.gram.gov.app.egram_service.facade.DocumentFacade;
 import in.gram.gov.app.egram_service.facade.GalleryImageFacade;
 import in.gram.gov.app.egram_service.facade.NewsletterFacade;
 import in.gram.gov.app.egram_service.facade.PanchayatFacade;
@@ -55,6 +58,7 @@ public class PublicController {
     private final AlbumFacadeNew albumFacade;
     private final PlatformLandingPageFacade platformLandingPageFacade;
     private final PanchayatWebsiteFacade panchayatWebsiteFacade;
+    private final DocumentFacade documentFacade;
 
 
     @GetMapping("/panchayats")
@@ -189,6 +193,48 @@ public class PublicController {
         PanchayatWebsiteConfigDTO config = new PanchayatWebsiteConfigDTO();
         config.setSections(sections);
         return ResponseEntity.ok(ApiResponse.success(config));
+    }
+
+    @GetMapping("/{slug}/documents")
+    public ResponseEntity<ApiResponse<PagedResponse<DocumentResponseDTO>>> getPublicDocuments(
+            @PathVariable String slug,
+            @RequestParam(required = false) DocumentCategory category,
+            @PageableDefault(size = 20) Pageable pageable) {
+        log.info("PublicController.getPublicDocuments called - slug={}, category={}", slug, category);
+        PagedResponse<DocumentResponseDTO> response = documentFacade.getPublicDocuments(slug, category, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{slug}/documents/{id}/view")
+    public ResponseEntity<ApiResponse<DocumentResponseDTO>> getPublicDocumentView(
+            @PathVariable String slug,
+            @PathVariable Long id) {
+        log.info("PublicController.getPublicDocumentView called - slug={}, id={}", slug, id);
+        // This will be handled by the facade - it should only return public documents
+        // For now, we'll use the same endpoint but ensure it's public
+        PagedResponse<DocumentResponseDTO> documents = documentFacade.getPublicDocuments(slug, null, 
+                org.springframework.data.domain.PageRequest.of(0, 1000));
+        
+        DocumentResponseDTO document = documents.getContent().stream()
+                .filter(doc -> doc.getDocumentId().equals(id))
+                .findFirst()
+                .orElse(null);
+        
+        if (document == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        return ResponseEntity.ok(ApiResponse.success(document));
+    }
+
+    @GetMapping("/{slug}/website-documents")
+    public ResponseEntity<ApiResponse<PagedResponse<DocumentResponseDTO>>> getWebsiteDocuments(
+            @PathVariable String slug,
+            @RequestParam(required = false) DocumentCategory category,
+            @PageableDefault(size = 20) Pageable pageable) {
+        log.info("PublicController.getWebsiteDocuments called - slug={}, category={}", slug, category);
+        PagedResponse<DocumentResponseDTO> response = documentFacade.getWebsiteDocuments(slug, category, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
 }

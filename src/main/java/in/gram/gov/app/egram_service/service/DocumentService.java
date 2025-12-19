@@ -1,6 +1,7 @@
 package in.gram.gov.app.egram_service.service;
 
 import in.gram.gov.app.egram_service.constants.enums.DocumentCategory;
+import in.gram.gov.app.egram_service.constants.enums.Visibility;
 import in.gram.gov.app.egram_service.constants.exception.ResourceNotFoundException;
 import in.gram.gov.app.egram_service.domain.entity.Document;
 import in.gram.gov.app.egram_service.domain.repository.DocumentRepository;
@@ -42,6 +43,22 @@ public class DocumentService {
     public Page<Document> findByPanchayatSlug(String slug, Pageable pageable) {
         log.info("DocumentService.findByPanchayatSlug called - slug={}, pageable={}", slug, pageable);
         return documentRepository.findByPanchayatSlug(slug, pageable);
+    }
+
+    public Page<Document> findByPanchayatIdWithFilters(Long panchayatId, DocumentCategory category, Visibility visibility, Pageable pageable) {
+        log.info("DocumentService.findByPanchayatIdWithFilters called - panchayatId={}, category={}, visibility={}", 
+                panchayatId, category, visibility);
+        return documentRepository.findByPanchayatIdWithFilters(panchayatId, category, visibility, pageable);
+    }
+
+    public Page<Document> findPublicDocumentsBySlug(String slug, DocumentCategory category, Pageable pageable) {
+        log.info("DocumentService.findPublicDocumentsBySlug called - slug={}, category={}", slug, category);
+        return documentRepository.findPublicDocumentsBySlug(slug, category, pageable);
+    }
+
+    public Page<Document> findWebsiteDocumentsBySlug(String slug, DocumentCategory category, Pageable pageable) {
+        log.info("DocumentService.findWebsiteDocumentsBySlug called - slug={}, category={}", slug, category);
+        return documentRepository.findWebsiteDocumentsBySlug(slug, category, pageable);
     }
 
     @Transactional
