@@ -2,7 +2,7 @@ spring:
   application:
     name: egram-platform
   datasource:
-    url: jdbc:postgresql://hopper.proxy.rlwy.net:36839/railway?currentSchema=egram_service
+    url: jdbc:${DATABASE_URL:}?currentSchema=egram_service
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
