@@ -39,6 +39,7 @@ public enum SectionType {
     MAP_SECTION,
     CALL_TO_ACTION,
     ACTIVE_PANCHAYATS_GRID,
+    SOCIAL_MEDIA_LINKS,
 
     // ============================================
     // Legacy Section Types (Backward Compatibility)
